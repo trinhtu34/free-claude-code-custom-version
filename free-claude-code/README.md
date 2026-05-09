@@ -12,7 +12,7 @@
 [![Code style: Ruff](https://img.shields.io/badge/code%20formatting-ruff-f5a623.svg?style=for-the-badge)](https://github.com/astral-sh/ruff)
 [![Logging: Loguru](https://img.shields.io/badge/logging-loguru-4ecdc4.svg?style=for-the-badge)](https://github.com/Delgan/loguru)
 
-A lightweight proxy that routes Claude Code's Anthropic API calls to **NVIDIA NIM** (40 req/min free), **OpenRouter** (hundreds of models), **DeepSeek** (direct API), **LM Studio** (fully local), or **llama.cpp** (local with Anthropic endpoints).
+A lightweight proxy that routes Claude Code's Anthropic API calls to **NVIDIA NIM** (40 req/min free), **OpenRouter** (hundreds of models), **DeepSeek** (direct API), **LM Studio** (fully local), **llama.cpp** (local with Anthropic endpoints), or **Qwen** (local or API key via Alibaba Cloud).
 
 [Quick Start](#quick-start) · [Providers](#providers) · [Discord Bot](#discord-bot) · [Configuration](#configuration) · [Development](#development) · [Contributing](#contributing)
 
@@ -31,7 +31,7 @@ A lightweight proxy that routes Claude Code's Anthropic API calls to **NVIDIA NI
 | -------------------------- | ----------------------------------------------------------------------------------------------- |
 | **Zero Cost**              | 40 req/min free on NVIDIA NIM. Free models on OpenRouter. Fully local with LM Studio            |
 | **Drop-in Replacement**    | Set 2 env vars. No modifications to Claude Code CLI or VSCode extension needed                  |
-| **5 Providers**            | NVIDIA NIM, OpenRouter, DeepSeek, LM Studio (local), llama.cpp (`llama-server`)                  |
+| **6 Providers**            | NVIDIA NIM, OpenRouter, DeepSeek, LM Studio (local), llama.cpp (`llama-server`), Qwen (local or API) |
 | **Per-Model Mapping**      | Route Opus / Sonnet / Haiku to different models and providers. Mix providers freely             |
 | **Thinking Token Support** | Parses `<think>` tags and `reasoning_content` into native Claude thinking blocks                |
 | **Heuristic Tool Parser**  | Models outputting tool calls as text are auto-parsed into structured tool use                   |
@@ -138,6 +138,30 @@ MODEL_SONNET="llamacpp/local-model"
 MODEL_HAIKU="llamacpp/local-model"
 MODEL="llamacpp/local-model"
 ```
+
+</details>
+
+<details>
+<summary><b>Qwen</b> (local or API key via Alibaba Cloud)</summary>
+
+Qwen provider supports two modes:
+
+**Local Mode** (no API key required - uses local Qwen server):
+```dotenv
+QWEN_USE_API_KEY=false
+QWEN_BASE_URL="http://localhost:3000/v1"
+MODEL="qwen/qwen-coder-next"
+```
+
+**API Mode** (with Alibaba Cloud API key):
+```dotenv
+QWEN_USE_API_KEY=true
+QWEN_BASE_URL="http://localhost:3000/v1"
+QWEN_API_KEY="your-alibaba-cloud-api-key-here"
+MODEL="qwen/qwen-coder-next"
+```
+
+Get your Alibaba Cloud API key from: [tongyi.aliyun.com/qianwen](https://tongyi.aliyun.com/qianwen)
 
 </details>
 
@@ -336,6 +360,7 @@ The proxy also exposes Claude-compatible probe routes: `GET /v1/models`, `POST /
 | **DeepSeek**   | Usage-based  | Varies     | Direct access to DeepSeek chat/reasoner |
 | **LM Studio**  | Free (local) | Unlimited  | Privacy, offline use, no rate limits |
 | **llama.cpp**  | Free (local) | Unlimited  | Lightweight local inference engine   |
+| **Qwen**       | Free (local) or Paid (API) | Varies     | Local Qwen server or Alibaba Cloud API |
 
 Models use a prefix format: `provider_prefix/model/name`. An invalid prefix causes an error.
 
@@ -346,6 +371,7 @@ Models use a prefix format: `provider_prefix/model/name`. An invalid prefix caus
 | DeepSeek   | `deepseek/...`    | `DEEPSEEK_API_KEY`   | `api.deepseek.com`            |
 | LM Studio  | `lmstudio/...`    | (none)               | `localhost:1234/v1`           |
 | llama.cpp  | `llamacpp/...`    | (none)               | `localhost:8080/v1`           |
+| Qwen       | `qwen/...`        | `QWEN_API_KEY` (optional) | `localhost:3000/v1`      |
 
 <details>
 <summary><b>NVIDIA NIM models</b></summary>
@@ -516,6 +542,10 @@ Configure via `WHISPER_DEVICE` (`cpu` | `cuda` | `nvidia_nim`) and `WHISPER_MODE
 | `OPENROUTER_PROXY`   | Optional proxy URL for OpenRouter requests (`http://...` or `socks5://...`) | `""` |
 | `LMSTUDIO_PROXY`     | Optional proxy URL for LM Studio requests (`http://...` or `socks5://...`) | `""` |
 | `LLAMACPP_PROXY`     | Optional proxy URL for llama.cpp requests (`http://...` or `socks5://...`) | `""` |
+| `QWEN_BASE_URL`      | Qwen server URL                                                       | `http://localhost:3000/v1`                        |
+| `QWEN_API_KEY`       | Alibaba Cloud API key (optional - for API mode)                     | empty                                             |
+| `QWEN_USE_API_KEY`   | Toggle: `false` for local mode, `true` for API mode                 | `false`                                           |
+| `QWEN_PROXY`         | Optional proxy URL for Qwen requests (`http://...` or `socks5://...`) | `""` |
 
 ### Rate Limiting & Timeouts
 
