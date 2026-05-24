@@ -111,3 +111,29 @@ def test_messages_request_accepts_redacted_thinking_blocks():
         "type": "redacted_thinking",
         "data": "opaque",
     }
+
+
+def test_messages_request_accepts_anthropic_web_search_server_tool():
+    request = MessagesRequest.model_validate(
+        {
+            "model": "claude-3-opus",
+            "max_tokens": 100,
+            "messages": [{"role": "user", "content": "search terraform modules"}],
+            "tools": [
+                {
+                    "type": "web_search_20250305",
+                    "name": "web_search",
+                    "max_uses": 8,
+                }
+            ],
+        }
+    )
+
+    dumped = request.model_dump(exclude_none=True)
+
+    assert dumped["tools"][0] == {
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 8,
+    }
+    assert request.tools[0].input_schema is None

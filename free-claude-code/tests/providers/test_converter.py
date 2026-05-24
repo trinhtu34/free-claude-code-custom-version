@@ -1,8 +1,9 @@
 import json
+from types import SimpleNamespace
 
 import pytest
 
-from core.anthropic import AnthropicToOpenAIConverter
+from core.anthropic import AnthropicToOpenAIConverter, build_base_request_body
 
 # --- Mock Classes ---
 
@@ -77,6 +78,37 @@ def test_convert_tools():
 
     assert result[1]["function"]["name"] == "calculator"
     assert result[1]["function"]["description"] == ""  # Check default empty string
+
+
+def test_convert_tools_skips_anthropic_server_tools_without_input_schema():
+    tools = [
+        MockTool("web_search", None, None),
+        MockTool("calculator", None, {"type": "object"}),
+    ]
+
+    result = AnthropicToOpenAIConverter.convert_tools(tools)
+
+    assert len(result) == 1
+    assert result[0]["function"]["name"] == "calculator"
+
+
+def test_build_base_request_body_omits_server_only_tools_and_choice():
+    request = SimpleNamespace(
+        model="test-model",
+        messages=[MockMessage("user", "search for terraform modules")],
+        max_tokens=100,
+        system=None,
+        temperature=None,
+        top_p=None,
+        stop_sequences=None,
+        tools=[MockTool("web_search", None, None)],
+        tool_choice={"type": "tool", "name": "web_search"},
+    )
+
+    result = build_base_request_body(request)
+
+    assert "tools" not in result
+    assert "tool_choice" not in result
 
 
 @pytest.mark.parametrize(

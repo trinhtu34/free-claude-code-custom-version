@@ -1,7 +1,7 @@
 """Request detection utilities for API optimizations.
 
 Detects quota checks, title generation, prefix detection, suggestion mode,
-and filepath extraction requests to enable fast-path responses.
+filepath extraction, and safety check requests to enable fast-path responses.
 """
 
 from core.anthropic import extract_text_from_content
@@ -128,3 +128,52 @@ def is_filepath_extraction_request(
         return True, command, output
     except Exception:
         return False, "", ""
+
+
+def is_safety_check_request(request_data: MessagesRequest) -> bool:
+    """Check if this is a safety classifier / command approval request.
+
+    Safety check requests from Claude Code typically have:
+    - A system prompt about safety classification or command evaluation
+    - A single user message containing a shell command to evaluate
+    - No tools or very limited tools
+    - Keywords like "safety", "dangerous", "classify", "command", "approve"
+    """
+    system_text = (
+        extract_text_from_content(request_data.system).lower()
+        if request_data.system
+        else ""
+    )
+
+    safety_keywords = (
+        "safety classifier",
+        "safety check",
+        "command safety",
+        "classify the following command",
+        "classify this command",
+        "evaluate this command for safety",
+        "evaluate the safety",
+        "determine if this command is safe",
+        "is this command safe",
+        "bash command safety",
+        "shell command safety",
+        "command classification",
+    )
+
+    is_safety_system = any(kw in system_text for kw in safety_keywords)
+
+    if not is_safety_system and len(request_data.messages) == 1:
+        msg_text = extract_text_from_content(
+            request_data.messages[0].content
+        ).lower()
+        is_safety_user = any(kw in msg_text for kw in safety_keywords)
+        if is_safety_user:
+            return True
+
+    if not is_safety_system:
+        return False
+
+    if len(request_data.messages) == 1 and request_data.messages[0].role == "user":
+        return True
+
+    return False

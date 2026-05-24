@@ -80,8 +80,15 @@ def get_token_count(
 
     if tools:
         for tool in tools:
+            name = get_block_attr(tool, "name", "")
+            description = get_block_attr(tool, "description", "") or ""
+            input_schema = get_block_attr(tool, "input_schema", {}) or {}
+            tool_type = get_block_attr(tool, "type", "") or ""
             tool_str = (
-                tool.name + (tool.description or "") + json.dumps(tool.input_schema)
+                str(name)
+                + str(description)
+                + str(tool_type)
+                + json.dumps(input_schema)
             )
             total_tokens += len(ENCODER.encode(tool_str))
 

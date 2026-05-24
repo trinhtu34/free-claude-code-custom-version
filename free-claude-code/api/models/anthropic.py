@@ -3,7 +3,7 @@
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 # =============================================================================
@@ -74,9 +74,16 @@ class Message(BaseModel):
 
 
 class Tool(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     name: str
     description: str | None = None
-    input_schema: dict[str, Any]
+    input_schema: dict[str, Any] | None = None
+    type: str | None = None
+    max_uses: int | None = None
+    allowed_domains: list[str] | None = None
+    blocked_domains: list[str] | None = None
+    user_location: dict[str, Any] | None = None
 
 
 class ThinkingConfig(BaseModel):

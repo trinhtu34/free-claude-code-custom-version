@@ -134,17 +134,28 @@ class AnthropicToOpenAIConverter:
 
     @staticmethod
     def convert_tools(tools: list[Any]) -> list[dict[str, Any]]:
-        return [
-            {
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description or "",
-                    "parameters": tool.input_schema,
-                },
-            }
-            for tool in tools
-        ]
+        converted_tools: list[dict[str, Any]] = []
+        for tool in tools:
+            input_schema = get_block_attr(tool, "input_schema")
+            if input_schema is None:
+                continue
+
+            name = get_block_attr(tool, "name")
+            if not name:
+                continue
+
+            converted_tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": get_block_attr(tool, "description", "") or "",
+                        "parameters": input_schema,
+                    },
+                }
+            )
+
+        return converted_tools
 
     @staticmethod
     def convert_tool_choice(tool_choice: Any) -> Any:
@@ -212,12 +223,29 @@ def build_base_request_body(
         body["stop"] = stop_sequences
 
     tools = getattr(request_data, "tools", None)
+    converted_tools: list[dict[str, Any]] = []
     if tools:
-        body["tools"] = AnthropicToOpenAIConverter.convert_tools(tools)
+        converted_tools = AnthropicToOpenAIConverter.convert_tools(tools)
+        if converted_tools:
+            body["tools"] = converted_tools
     tool_choice = getattr(request_data, "tool_choice", None)
-    if tool_choice:
-        body["tool_choice"] = AnthropicToOpenAIConverter.convert_tool_choice(
+    if tool_choice and converted_tools:
+        converted_tool_choice = AnthropicToOpenAIConverter.convert_tool_choice(
             tool_choice
         )
+        if isinstance(converted_tool_choice, dict):
+            function = converted_tool_choice.get("function")
+            if isinstance(function, dict):
+                converted_names = {
+                    tool["function"]["name"]
+                    for tool in converted_tools
+                    if isinstance(tool.get("function"), dict)
+                }
+                if function.get("name") in converted_names:
+                    body["tool_choice"] = converted_tool_choice
+            else:
+                body["tool_choice"] = converted_tool_choice
+        else:
+            body["tool_choice"] = converted_tool_choice
 
     return body
