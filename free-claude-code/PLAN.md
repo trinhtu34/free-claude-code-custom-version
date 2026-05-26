@@ -34,7 +34,7 @@ flowchart TD
     core --> messaging
     providers --> api
     cli --> messaging
-    messaging --> api
+    messaging --> a
 ```
 
 The practical rule is simpler than the graph: shared protocol helpers belong in
