@@ -1,33 +1,22 @@
 name: Test Workflow
 
-# Các cách trigger workflow
 on:
-  # Trigger khi push lên branch main hoặc bất kỳ branch nào
   push:
-    branches: ["main", "**"]
-
-  # Trigger khi tạo Pull Request vào main
-  pull_request:
-    branches: ["main"]
-
-  # Trigger thủ công từ tab Actions trên GitHub
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Hello World
         run: echo "Hello! GitHub Action triggered successfully!"
 
-      - name: Show trigger info
+      - name: Show info
         run: |
-          echo "Event: ${{ github.event_name }}"
+          echo "Event name: ${{ github.event_name }}"
           echo "Branch: ${{ github.ref }}"
           echo "Actor: ${{ github.actor }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "Commit SHA: ${{ github.sha }}"
